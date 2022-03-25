@@ -34,7 +34,8 @@ func init() {
 		"dbname=" + dbDatabase + " " +
 		"user=" + dbUser + " " +
 		"password=" + dbPassword + " " +
-		"sslmode=disable"
+		"sslmode=disable" + " " +
+		"TimeZone=UTC"
 }
 
 func ConnectDB() *gorm.DB {
