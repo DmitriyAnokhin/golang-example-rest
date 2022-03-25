@@ -2,10 +2,13 @@ package controllers
 
 import (
 	"example/rest/models"
+	"gorm.io/gorm"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
+
+var DB *gorm.DB
 
 type CreateTrackInput struct {
 	Artist string `json:"artist" binding:"required"`
@@ -17,16 +20,22 @@ type UpdateTrackInput struct {
 	Title  string `json:"title"`
 }
 
-// GET /tracks
+func init() {
+	DB = models.ConnectDB()
+}
+
+// GetAllTracks GET /tracks
 // Получаем список всех треков
 func GetAllTracks(context *gin.Context) {
+
 	var tracks []models.Track
-	models.ConnectDB().Find(&tracks)
+
+	DB.Find(&tracks)
 
 	context.JSON(http.StatusOK, gin.H{"tracks": tracks})
 }
 
-// POST /tracks
+// CreateTrack POST /tracks
 // Создание трека
 func CreateTrack(context *gin.Context) {
 
@@ -38,18 +47,20 @@ func CreateTrack(context *gin.Context) {
 	}
 
 	track := models.Track{Artist: input.Artist, Title: input.Title}
-	models.ConnectDB().Create(&track)
+
+	DB.Create(&track)
 
 	context.JSON(http.StatusOK, gin.H{"tracks": track})
 }
 
-// GET /tracks/:id
+// GetTrack GET /tracks/:id
 // Получение одного трека по ID
 func GetTrack(context *gin.Context) {
+
 	// Проверяем имеется ли запись
 	var track models.Track
 
-	if err := models.ConnectDB().Where("id = ?", context.Param("id")).First(&track).Error; err != nil {
+	if err := DB.Where("id = ?", context.Param("id")).First(&track).Error; err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Запись не существует"})
 		return
 	}
@@ -57,17 +68,20 @@ func GetTrack(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"tracks": track})
 }
 
-// PATCH /tracks/:id
+// UpdateTrack PATCH /tracks/:id
 // Изменения информации
 func UpdateTrack(context *gin.Context) {
+
 	// Проверяем имеется ли такая запись перед тем как её менять
 	var track models.Track
-	if err := models.ConnectDB().Where("id = ?", context.Param("id")).First(&track).Error; err != nil {
+
+	if err := DB.Where("id = ?", context.Param("id")).First(&track).Error; err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Запись не существует"})
 		return
 	}
 
 	var input UpdateTrackInput
+
 	if err := context.ShouldBindJSON(&input); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -78,22 +92,24 @@ func UpdateTrack(context *gin.Context) {
 	track.Artist = input.Artist
 	track.Title = input.Title
 
-	models.ConnectDB().Save(&track)
+	DB.Save(&track)
 
 	context.JSON(http.StatusOK, gin.H{"tracks": track})
 }
 
-// DELETE /tracks/:id
+// DeleteTrack DELETE /tracks/:id
 // Удаление
 func DeleteTrack(context *gin.Context) {
+
 	// Проверяем имеется ли такая запись перед тем как её удалять
 	var track models.Track
-	if err := models.ConnectDB().Where("id = ?", context.Param("id")).First(&track).Error; err != nil {
+
+	if err := DB.Where("id = ?", context.Param("id")).First(&track).Error; err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Запись не существует"})
 		return
 	}
 
-	models.ConnectDB().Delete(&track)
+	DB.Delete(&track)
 
 	context.JSON(http.StatusOK, gin.H{"tracks": true})
 }
